@@ -12,6 +12,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 #include <ctype.h>
 
 #define MAX_PASS 20

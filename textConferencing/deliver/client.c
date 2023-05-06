@@ -1,4 +1,5 @@
 #include "packet.h"
+#include <pthread.h>
 
 struct client current_client = {.client_key = -1, .client_sock = -1, .ID = NULL, .in_session = 0, .logged_in = 0, .password = NULL, .session_id = NULL};
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;

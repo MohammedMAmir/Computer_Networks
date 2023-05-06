@@ -53,18 +53,20 @@ int empty_key_search(int client_sesh){
     return -1;
 }
 
+//finds a session key from the session list
 int find_sesh_key(char* session_id){
     for(int i = 0; i < MAX_SESH; i++){
         if(sesh_list[i] != NULL){
             if(strcmp(sesh_list[i]->session_id, session_id) == 0){
-            return i;
-        }
+                return i;
+            }
         }
         
     }
     return -1;
 }
 
+//insert a client with a new socket into a specified session in the sesh_list,
 void insert_sock_sesh(int session_key, int sockfd, int key){
     if(sesh_list[session_key]->head == NULL){
         sesh_list[session_key]->head = (struct session_part *) malloc(sizeof(struct session_part));
@@ -85,23 +87,28 @@ void insert_sock_sesh(int session_key, int sockfd, int key){
     return;
 }
 
+//delete a specified socket from a given session in the sesh_list
 void delete_sock_sesh(int session_key, int sockfd, int key){
     struct session_part* prev = NULL;
     struct session_part* current = sesh_list[session_key]->head;
-
+    //go through all participants in the linked list at sesh_key[session_key]
     while(current != NULL){
+        //if the key is the client key, delete it
         if(current->client_key == key){
+            //handles the client key at the head of the list
             if(current == sesh_list[session_key]->head){
                 sesh_list[session_key]->head = current->next_part;
                 free(current);
                 current = NULL;
                 return;
+            //handles the client key deeper in the list    
             }else{
                 prev->next_part = current->next_part;
                 free(current); 
                 current = NULL;
                 return;
             }
+        //interate to the next participant in the list    
         }else{
             prev = current;
             current = current->next_part;
@@ -109,6 +116,7 @@ void delete_sock_sesh(int session_key, int sockfd, int key){
     }
 }
 
+//join a session (session must be created before joining)
 int join_sesh(int sockfd, char* source, char* session_id){
    int key = sock_key_search(sockfd); 
     if(client_list[key]->in_session == 1){
@@ -282,24 +290,20 @@ int parse_request(int req_sock, struct message* msg){
 void read_database(){
     FILE    *textfile;
     char    line[MAXLINELENGTH];
-    int ok;
-    textfile = fopen("serv/database.txt", "r");
-     
+    if((textfile = fopen("database.txt", "r")) == NULL ){
+        perror("open issue");
+        return;
+    }
+
     while(fgets(line, MAXLINELENGTH, textfile)){
         int space = 0;
-        char client[MAX_NAME];
-        char password[MAX_PASS];
-        for(int i = 0; i < MAXLINELENGTH; i++){
-            if(isspace(line[i]) != 0){
-               space = 1; 
-               i++;
-            }
-            if(space = 0){
-                client[i] = line[i];
-            }else{
-                password[i] = line[i];
-            }
-        }
+        char* client;
+        char* password;
+        client = strtok(line, " ");
+        printf("yup\n");
+        password = strtok(NULL, " ");
+
+        printf("I'm here\n");
         int ret = empty_key_search(0);
         if(ret == -1){
             return;
@@ -321,7 +325,7 @@ void write_database(int key){
     FILE    *textfile;
     char    line[MAXLINELENGTH];
 
-    textfile = fopen("serv/database.txt", "a");
+    textfile = fopen("database.txt", "a");
     for(int i = 0; i < MAX_CLIENT; i++){
         if(client_list[i] != NULL){
             if(client_list[i]->client_key == key){
@@ -335,6 +339,16 @@ void write_database(int key){
         }
     }
 }
+
+void list_database(){
+    for(int i = 0; i < MAX_CLIENT; i++){
+        if(client_list[i] != NULL){
+            printf("%s", client_list[i]->ID);
+            printf(" %s\n", client_list[i]->password);
+        }
+    }
+}
+
 //sets up the database of clients and sessions
  void setup(){
     for(int i = 0; i < MAX_CLIENT; i++){
@@ -621,6 +635,7 @@ int main(int argc, char** argv){
                         FD_CLR(i, &master); // remove from master set
                     } else {
                         // we got some data from a client
+                        list_database();
                         int key = sock_key_search(i);
                         client_list[key]->last_request = clock();
                         if(msg.type == EXIT){
